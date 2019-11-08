@@ -11,64 +11,71 @@
 ## the assignment graded as complete. 
 
 # 1. Download the data file "digsym.csv" from the moodle and save it in your working directory. 
-
+# done. It's in the subfolder data
 
 # 2. Read in the data into a variable called "dat".
-
+dat <- read.csv("data/digsym.csv")
 
 # 3. Load the libraries languageR, stringr, dplyr and tidyr.
-
+library(languageR)
+library(stringr)
+library(dplyr)
+library(tidyr)
 
 # 4. How many rows, how many columns does that data have?
-
+dim(dat) # 3700 rows, 11 columns
 
 # 5. Take a look at the structure of the data frame using "glimpse".
-
+glimpse(dat)
 
 # 6. View the first 20 rows, view the last 20 rows.
-
+head(dat, 20)
+tail(dat, 20)
 
 # 7. Is there any missing data in any of the columns?
-
+# Yes, for example in columns named StimulDS1.CRESP, StimulDS1.RESP (factors) we empty strings, and
+# e.g. in StimulDS1.RT there are a few "NA"s
 
 # 8. Get rid of the row number column.
-
+dat <- select(dat, ExperimentName:Sub_Age)
 
 # 9. Put the Sub_Age column second.
-
+dat <- dat[,c(1,10,2,3,4,5,6,7,8,9)]
 
 # 10. Replace the values of the "ExperimentName" column with something shorter, more legible.
-
+dat$ExperimentName <- (dat$ExperimentName = "dig_sym_cp")
 
 # 11. Keep only experimental trials (encoded as "Trial:2" in List), get rid of practice trials 
 # (encoded as "Trial:1"). When you do this, assign the subset of the data to a variable "data2", 
 # then assign data2 to dat and finally remove data2.
-
+data2 <- dat[dat$List == "Trial:2", ]
+dat <- data2
+rm(data2)
 
 # 12. Separate Sub_Age column to two columns, "Subject" and "Age", using the function "separate".
-
+dat <- separate(dat, Sub_Age, c("Subject", "Age"))
 
 # 13. Make subject a factor.
-
+dat$Subject <- as.factor(dat$Subject)
 
 # 14. Extract experimental condition ("right" vs. "wrong") from the "File" column:
 # i.e. we want to get rid of digit underscore before and the digit after the "right" and "wrong".
-
-
+dat$File <- str_remove_all(dat$File, "[123456789_]")
 
 # 15. Using str_pad to make values in the File column 8 chars long, by putting 0 at the end  (i.e., 
 # same number of characters, such that "1_right" should be replaced by "1_right0" etc).
-
+# Note: I thought we're supposed to get rid of the leading digit underscore...?
+dat$File <- as.factor(str_pad(dat$File, 8, "right", "0"))
 
 # 16. Remove the column "List".
-
+dat$List <- NULL
 
 # 17. Change the data type of "Age" to integer.
-
+dat$Age <- as.integer(dat$Age)
 
 # 18. Missing values, outliers:
 # Do we have any NAs in the data, and if so, how many and where are they?
-
+any(is.na(dat)) # there no NAs in the data anymore
 
 # 19. Create an "accuracy" column using ifelse-statement.
 # If actual response (StimulDS1.RESP) is the same as the correct response (StimulDS1.CRESP), put 

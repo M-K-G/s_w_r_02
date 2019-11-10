@@ -75,40 +75,50 @@ dat$Age <- as.integer(dat$Age)
 
 # 18. Missing values, outliers:
 # Do we have any NAs in the data, and if so, how many and where are they?
-any(is.na(dat)) # there no NAs in the data anymore
+any(is.na(dat)) # there are no NAs in the data anymore
 
 # 19. Create an "accuracy" column using ifelse-statement.
 # If actual response (StimulDS1.RESP) is the same as the correct response (StimulDS1.CRESP), put 
 # in value 1, otherwise put 0.
 
+dat <- dat %>%
+  mutate(accuracy = ifelse(StimulDS1.RESP == StimulDS1.CRESP, 1, 0))
 
 # 20. How many wrong answers do we have in total?
-
+sum(dat$accuracy)
+# 3145 correct answers in total
 
 # 21. What's the percentage of wrong responses?
-
-
+(length(dat$accuracy) - sum(dat$accuracy)) / length(dat$accuracy)
+# percentage of wrong responses is 5.55
 
 # 22. Create a subset "correctResponses" that only contains those data points where subjects 
 # responded correctly. 
-
-
+dat <- subset(dat, accuracy == 1)
 
 # 23. Create a boxplot of StimulDS1.RT - any outliers?
-
+boxplot(dat$StimulDS1.RT)
+# yes, there are outliers
 
 # 24. Create a histogram of StimulDS1.RT with bins set to 50.
-
+hist(dat$StimulDS1.RT, breaks = 50)
 
 # 25. Describe the two plots - any tails? any suspiciously large values?
-
+# There are outliers. The Max. of dat$StimulDS1.RT is at 13852 (milliseconds?)
+# which is about ten times the amount for the 3rd quartile. Aside from that, 
+# there are plenty of values outside the IQR - as the circles beyond 
+# the whiskers in the boxplot indicate.
+summary(dat$StimulDS1.RT)
 
 # 26. View summary of correct_RT.
-
+# no variable/dataset of that name?
+# based on what conditions are we supposed to create it?
 
 # 27. There is a single very far outlier. Remove it and save the result in a new dataframe named 
 # "cleaned".
-
+cleaned <- filter(dat, StimulDS1.RT != max(StimulDS1.RT))
+boxplot(cleaned$StimulDS1.RT)
+hist(cleaned$StimulDS1.RT, breaks = 50)
 
 ## EXTRA Exercises:
 ##You can stop here for your submission of this week's assignment,
@@ -120,22 +130,44 @@ any(is.na(dat)) # there no NAs in the data anymore
 # Values should not differ more than 2.5 standard deviations from the grand mean of this variable.
 # This condition should be applied in a new variable called "correct_RT_2.5sd", which prints NA 
 # if an RT value is below/above the cutoff. 
+cutoff_dif <- sd(cleaned$StimulDS1.RT) * 2.5
+mn_RT <- mean(cleaned$StimulDS1.RT)
+cutoff_val <- (sd(cleaned$StimulDS1.RT) * 2.5) + mean(cleaned$StimulDS1.RT)
 
+cleaned <- cleaned %>%
+  mutate(correct_RT_2.5sd = ifelse(cleaned$StimulDS1.RT > (mn_RT+cutoff_dif), NA, StimulDS1.RT))
 
 # 29. Take a look at the outlier observations.
 # Any subjects who performed especially poorly?
-
+any(is.na(cleaned$correct_RT_2.5sd))
+# yes
 
 # 30. How many RT outliers are there in total?
-
+sum(is.na(cleaned$correct_RT_2.5sd))
+# 78 subjects performed poorly
 
 # 31. Plot a histogram and boxplot of the correct_RT_2.5sd column again - nice and clean eh?
-
+hist(cleaned$correct_RT_2.5sd, breaks = 50)
+boxplot(cleaned$correct_RT_2.5sd)
 
 # 32. Next, we'd like to take a look at the average accuracy per subject.
 # Using the "cast" function from the library "reshape", create a new data.frame which shows the 
 # average accuracy per subject. Rename column which lists the average accuracy as "avrg_accuracy".
+library(reshape)
 
+# datas = data.frame(Person = c("Mike", "Mike", "Bob", "Bob"),
+#                    Country = c("France", "UK", "France", "UK"),
+#                    Spent = c(1213,1872,1726,2234))
+# datas
+# q1 <- cast(datas, Person~Country, value = "Spent")
+# q1
+# q2 <- cast(datas, Country~Person, value = "Spent")
+# q2
+# 
+# cleaned1 <- 
+# 
+# clean_df <- cast(cleaned, Subject~correct_RT_2.5sd, value = "accuracy", mean)
+# str(clean_df)
 
 # 33. Sort in ascending order or plot of the average accuracies per subject.
 

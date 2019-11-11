@@ -2,6 +2,9 @@
 ### Cleaning Data
 ###############
 
+## Name: Kopf-Giammanco, Martin and Maike Puhl, and Jonathan Watkins
+## Matriculation number: 2566852 (MKG), 2538890 (MP), 2532781 (JW)
+
 # Please do the "Cleaning Data with R" exercise that was assigned in DataCamp.
 # We recommend that you take notes during the DataCamp tutorial, so you're able to use the commands 
 # you learned there in the exercises below.
@@ -37,21 +40,33 @@ tail(dat, 20)
 # e.g. in StimulDS1.RT there are a few "NA"s
 
 # 8. Get rid of the row number column.
-dat <- select(dat, ExperimentName:Sub_Age)
+# @Maike: meines:
+# dat <- select(dat, ExperimentName:Sub_Age)
+# mir gefällt deines besser:
+dat <- select(dat, -X)
 
 # 9. Put the Sub_Age column second.
 dat <- dat[,c(1,10,2,3,4,5,6,7,8,9)]
 
 # 10. Replace the values of the "ExperimentName" column with something shorter, more legible.
-dat$ExperimentName <- (dat$ExperimentName = "dig_sym_cp")
+# @Maike: Ich glaube meines ist ein bisschen kürzer.
+dat$ExperimentName <- (dat$ExperimentName = "dsc")
 
 # 11. Keep only experimental trials (encoded as "Trial:2" in List), get rid of practice trials 
 # (encoded as "Trial:1"). When you do this, assign the subset of the data to a variable "data2", 
 # then assign data2 to dat and finally remove data2.
+# @Maike: Das hier ist meine Lösung:
 data2 <- dat[dat$List == "Trial:2", ]
 dat <- data2
 rm(data2)
-
+# Du meintest, dass das zweite Faktorlevel noch immer da ist, nach deine Lösung. Bei mir funktionierts,
+# solange ich die Pipe '%>%' wegmache. Also du hast folgendes in deinem Code:
+data3 <- dat %>%
+  filter(dat$List == "Trial:2") %>%
+# Aber so fonktionierts:
+data3 <- dat %>%
+  filter(dat$List == "Trial:2")
+  
 # 12. Separate Sub_Age column to two columns, "Subject" and "Age", using the function "separate".
 dat <- separate(dat, Sub_Age, c("Subject", "Age"))
 
@@ -60,6 +75,7 @@ dat$Subject <- as.factor(dat$Subject)
 
 # 14. Extract experimental condition ("right" vs. "wrong") from the "File" column:
 # i.e. we want to get rid of digit underscore before and the digit after the "right" and "wrong".
+# @Maike: Ich glaube, meine Version ist hier ökonomischer:
 dat$File <- str_remove_all(dat$File, "[123456789_]")
 
 # 15. Using str_pad to make values in the File column 8 chars long, by putting 0 at the end  (i.e., 
@@ -68,13 +84,17 @@ dat$File <- str_remove_all(dat$File, "[123456789_]")
 dat$File <- as.factor(str_pad(dat$File, 8, "right", "0"))
 
 # 16. Remove the column "List".
+# @Maike: Ich habe das hier gefunden:
 dat$List <- NULL
+# Deine Lösung ist aber auch elegant:
+dat <- select(dat, -List)
 
 # 17. Change the data type of "Age" to integer.
 dat$Age <- as.integer(dat$Age)
 
 # 18. Missing values, outliers:
 # Do we have any NAs in the data, and if so, how many and where are they?
+# @Maike: Das ist mein Vorschlag für 'in schön' (kommt aus dem Datacamp-Kurs):
 any(is.na(dat)) # there are no NAs in the data anymore
 
 # 19. Create an "accuracy" column using ifelse-statement.
@@ -84,17 +104,23 @@ any(is.na(dat)) # there are no NAs in the data anymore
 dat <- dat %>%
   mutate(accuracy = ifelse(StimulDS1.RESP == StimulDS1.CRESP, 1, 0))
 
+dat$accuracy <- ifelse(dat$StimulDS1.RESP == dat$StimulDS1.CRESP, 1, 0)
+
 # 20. How many wrong answers do we have in total?
-sum(dat$accuracy)
-# 3145 correct answers in total
+length(dat$accuracy) - sum(dat$accuracy)
+# 185 wrong answers in total
 
 # 21. What's the percentage of wrong responses?
 (length(dat$accuracy) - sum(dat$accuracy)) / length(dat$accuracy)
 # percentage of wrong responses is 5.55
 
+# @Maike: Deins:
+# 185/3145
+# Du nimmst nur die richtigen Antworten (3145) as 100% anstatt alle Antworten (3330).
+
 # 22. Create a subset "correctResponses" that only contains those data points where subjects 
-# responded correctly. 
-dat <- subset(dat, accuracy == 1)
+# responded correctly.
+correctResponses <- subset(dat, accuracy == 1)
 
 # 23. Create a boxplot of StimulDS1.RT - any outliers?
 boxplot(dat$StimulDS1.RT)
@@ -111,8 +137,10 @@ hist(dat$StimulDS1.RT, breaks = 50)
 summary(dat$StimulDS1.RT)
 
 # 26. View summary of correct_RT.
-# no variable/dataset of that name?
-# based on what conditions are we supposed to create it?
+# no variable/dataset of that name? (correct Reaction Time?)
+# Here is a summary of correct Response instead...
+summary(dat$StimulDS1.CRESP)
+summary(correctResponses)
 
 # 27. There is a single very far outlier. Remove it and save the result in a new dataframe named 
 # "cleaned".
@@ -144,7 +172,7 @@ any(is.na(cleaned$correct_RT_2.5sd))
 
 # 30. How many RT outliers are there in total?
 sum(is.na(cleaned$correct_RT_2.5sd))
-# 78 subjects performed poorly
+# 82 subjects performed poorly
 
 # 31. Plot a histogram and boxplot of the correct_RT_2.5sd column again - nice and clean eh?
 hist(cleaned$correct_RT_2.5sd, breaks = 50)
@@ -155,25 +183,33 @@ boxplot(cleaned$correct_RT_2.5sd)
 # average accuracy per subject. Rename column which lists the average accuracy as "avrg_accuracy".
 library(reshape)
 
-# datas = data.frame(Person = c("Mike", "Mike", "Bob", "Bob"),
-#                    Country = c("France", "UK", "France", "UK"),
-#                    Spent = c(1213,1872,1726,2234))
-# datas
-# q1 <- cast(datas, Person~Country, value = "Spent")
-# q1
-# q2 <- cast(datas, Country~Person, value = "Spent")
-# q2
-# 
-# cleaned1 <- 
-# 
-# clean_df <- cast(cleaned, Subject~correct_RT_2.5sd, value = "accuracy", mean)
-# str(clean_df)
+# Here is an attempt at grouping mean accuracy by Subject.
+sub_avg <- cleaned %>%
+  group_by(Subject) %>%
+  summarise(avrg_accuracy = mean(accuracy))
 
 # 33. Sort in ascending order or plot of the average accuracies per subject.
+sub_avg <- sub_avg %>%
+  arrange(avrg_accuracy)
 
+hist(sub_avg$avrg_accuracy)
+boxplot(sub_avg$avrg_accuracy)
+summary(sub_avg)
+min(sub_avg$avrg_accuracy)
 
 # 34. Would you exclude any subjects, based on their avrg_accuracy performance?
+# Yes, I would probably exclude one subject based on their poor performance, i.e.
+# the observation with an average accuracy of 0.8555556.
 
+# create vector with outlier-subjects:
+subj_to_rm <- sub_avg %>%
+  filter(avrg_accuracy < quantile(sub_avg$avrg_accuracy)[2]-IQR(sub_avg$avrg_accuracy)) %>%
+  pull(Subject)
+
+# remove observations that match subjects in outlier-subjects (only one):
+cleaned_fin <- cleaned %>%
+  filter(Subject != subj_to_rm)
 
 # 35. Congrats! Your data are now ready for analysis. Please save the data frame you created 
 # into a new file called "digsym_clean.csv".
+write.csv(cleaned_fin, "data/digsym_clean.csv")

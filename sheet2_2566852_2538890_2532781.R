@@ -194,6 +194,13 @@ subj_to_rm <- sub_avg %>%
 cleaned_fin <- cleaned %>%
   filter(Subject != subj_to_rm)
 
+# remove subjects that match removal criteria
+sub_avg_cl <- sub_avg %>%
+  filter(Subject != subj_to_rm)
+
+# make a boxplot for good measure
+boxplot(sub_avg_cl$avrg_accuracy)
+
 # 35. Congrats! Your data are now ready for analysis. Please save the data frame you created
 # into a new file called "digsym_clean.csv".
 write.csv(cleaned_fin, "data/digsym_clean.csv")

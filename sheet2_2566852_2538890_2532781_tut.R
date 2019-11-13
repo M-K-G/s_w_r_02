@@ -17,7 +17,7 @@
 # done. It's in the subfolder data
 
 # 2. Read in the data into a variable called "dat".
-dat <- read.csv("data/digsym.csv")
+dat <- read.csv("data/digsym.csv") # TUT: head=TRUE is default
 
 # 3. Load the libraries languageR, stringr, dplyr and tidyr.
 library(languageR)
@@ -39,16 +39,29 @@ tail(dat, 20)
 # Yes, for example in columns named StimulDS1.CRESP, StimulDS1.RESP (factors) we empty strings, and
 # e.g. in StimulDS1.RT there are a few "NA"s
 
-# 8. Get rid of the row number column.
+#TUT: the recommendation is to provide code AND an answer in for questions like this (7)...
+summary(dat)
+# other approaches:
+sum(is.na(dat))
+any(is.na(dat))
 
+# 8. Get rid of the row number column.
 dat <- select(dat, -X)
+# TUT: alternatives
+dat$X <- rm()
+dat$X <- NULL
 
 # 9. Put the Sub_Age column second.
 dat <- dat[,c(1,10,2,3,4,5,6,7,8,9)]
+# TUT: alternative:
+dat <- dat[,c(1,10,2:9)]
+dat <- select(dat, ExperimentName, Sub_Age, everything())
 
 # 10. Replace the values of the "ExperimentName" column with something shorter, more legible.
-
 dat$ExperimentName <- (dat$ExperimentName = "dsc")
+
+#TUT:
+dat$ExperimentName <- as.factor("DSKopie")
 
 # 11. Keep only experimental trials (encoded as "Trial:2" in List), get rid of practice trials
 # (encoded as "Trial:1"). When you do this, assign the subset of the data to a variable "data2",
@@ -58,9 +71,14 @@ data2 <- dat[dat$List == "Trial:2", ]
 dat <- data2
 rm(data2)
 
+# TUT alternative:
+data2 <- subset(dat, List=="Trial:2")
+dat <- data2
+rm(data2)
+
 
 # 12. Separate Sub_Age column to two columns, "Subject" and "Age", using the function "separate".
-dat <- separate(dat, Sub_Age, c("Subject", "Age"))
+dat <- separate(dat, Sub_Age, c("Subject", "Age")) # TUT: "_" is default separator
 
 # 13. Make subject a factor.
 dat$Subject <- as.factor(dat$Subject)
@@ -70,14 +88,20 @@ dat$Subject <- as.factor(dat$Subject)
 
 dat$File <- str_remove_all(dat$File, "[123456789_]")
 
+#TUT: (we did this wrong - so did mane people apparently)
+# We were supposed to make a new variable here
+dat$cond <- as.factor(substr(dat$File, start = 3, stop = 7))
+
 # 15. Using str_pad to make values in the File column 8 chars long, by putting 0 at the end  (i.e.,
 # same number of characters, such that "1_right" should be replaced by "1_right0" etc).
 # Note: I thought we're supposed to get rid of the leading digit underscore...?
 dat$File <- as.factor(str_pad(dat$File, 8, "right", "0"))
 
 # 16. Remove the column "List".
-
 dat$List <- NULL
+
+#TUT: alternative
+dat$List <- rm()
 
 # 17. Change the data type of "Age" to integer.
 dat$Age <- as.integer(dat$Age)
@@ -93,14 +117,22 @@ any(is.na(dat)) # there are no NAs in the data anymore
 
 dat$accuracy <- ifelse(dat$StimulDS1.RESP == dat$StimulDS1.CRESP, 1, 0)
 
+#TUT:
+glimpse(dat)
+
 # 20. How many wrong answers do we have in total?
 length(dat$accuracy) - sum(dat$accuracy)
 # 185 wrong answers in total
+
+# TUT: alternative
+sum(dat$accuracy == 0)
 
 # 21. What's the percentage of wrong responses?
 (length(dat$accuracy) - sum(dat$accuracy)) / length(dat$accuracy)
 # percentage of wrong responses is 5.55
 
+#TUT: alterative:
+sum(dat$accuracy == 0) / length(dat$accuracy)
 
 # 22. Create a subset "correctResponses" that only contains those data points where subjects
 # responded correctly.
@@ -110,8 +142,15 @@ correctResponses <- subset(dat, accuracy == 1)
 boxplot(dat$StimulDS1.RT)
 # yes, there are outliers
 
+# TUT:
+boxplot(correctResponses$StimulDS1.RT)
+
+
 # 24. Create a histogram of StimulDS1.RT with bins set to 50.
 hist(dat$StimulDS1.RT, breaks = 50)
+
+# TUT:
+hist(correctResponses$StimulDS1.RT, breaks = 50)
 
 # 25. Describe the two plots - any tails? any suspiciously large values?
 # There are outliers. The Max. of dat$StimulDS1.RT is at 13852 (milliseconds?)
@@ -126,11 +165,17 @@ summary(dat$StimulDS1.RT)
 summary(dat$StimulDS1.CRESP)
 summary(correctResponses)
 
+#TUT:
+summary(correctResponses$StimulDS1.RT)
+
 # 27. There is a single very far outlier. Remove it and save the result in a new dataframe named
 # "cleaned".
-cleaned <- filter(dat, StimulDS1.RT != max(StimulDS1.RT))
+cleaned <- filter(correctResponses, StimulDS1.RT != max(StimulDS1.RT))
 boxplot(cleaned$StimulDS1.RT)
 hist(cleaned$StimulDS1.RT, breaks = 50)
+
+# TUT:
+cleaned <- correctResponses[correctResponses$StimulDS1.RT != 13852,]
 
 ## EXTRA Exercises:
 ##You can stop here for your submission of this week's assignment,
@@ -149,28 +194,55 @@ cutoff_val <- (sd(cleaned$StimulDS1.RT) * 2.5) + mean(cleaned$StimulDS1.RT)
 cleaned <- cleaned %>%
   mutate(correct_RT_2.5sd = ifelse(cleaned$StimulDS1.RT > (mn_RT+cutoff_dif), NA, StimulDS1.RT))
 
+# TUT:
+mean <- mean(correctResponses$StimulDS1.RT, na.rm = TRUE)
+sd <- sd(correctResponses$StimulDS1.RT, na.rm = TRUE)
+correctResponses$correct_RT_2.5sd <- 
+  ifelse(((correctResponses$StimulDS1.RT > 2.5*sd+mean) |
+            correctResponses$StimulDS1.RT < mean - 2.5*sd), NA,
+         correctResponses$StimulDS1.RT)
+
+summary(correctResponses$correct_RT_2.5sd)
+
 # 29. Take a look at the outlier observations.
 # Any subjects who performed especially poorly?
 any(is.na(cleaned$correct_RT_2.5sd))
 # yes
 
+# TUT:
+outliers <- subset(correctResponses, is.na(correctResponses$correct_RT_2.5sd))
+table(outliers$Subject)
+
 # 30. How many RT outliers are there in total?
 sum(is.na(cleaned$correct_RT_2.5sd))
+
+# TUT:
+count(outliers)
+
 # 82 subjects performed poorly
 
 # 31. Plot a histogram and boxplot of the correct_RT_2.5sd column again - nice and clean eh?
 hist(cleaned$correct_RT_2.5sd, breaks = 50)
 boxplot(cleaned$correct_RT_2.5sd)
 
+# TUT:
+hist(correctResponses$correct_RT_2.5sd, breaks = 50)
+boxplot(correctResponses$correct_RT_2.5sd)
+
 # 32. Next, we'd like to take a look at the average accuracy per subject.
 # Using the "cast" function from the library "reshape", create a new data.frame which shows the
 # average accuracy per subject. Rename column which lists the average accuracy as "avrg_accuracy".
 library(reshape)
-
+?cast
 # Here is an attempt at grouping mean accuracy by Subject.
 sub_avg <- cleaned %>%
   group_by(Subject) %>%
   summarise(avrg_accuracy = mean(accuracy))
+
+#TUT: cast() is like a group_by(), it aggregates varible:
+# the " ~ . " is a necessary placeholder:
+dat2 <- cast(dat, Subject ~ ., fun.aggregate = "mean", value = "accuracy")
+colnames(dat2) <- c("Subject", "avrg_accuracy")
 
 # 33. Sort in ascending order or plot of the average accuracies per subject.
 sub_avg <- sub_avg %>%
@@ -180,6 +252,11 @@ hist(sub_avg$avrg_accuracy)
 boxplot(sub_avg$avrg_accuracy)
 summary(sub_avg)
 min(sub_avg$avrg_accuracy)
+
+#TUT:
+plot(dat2, Sub~avrg_accuracy)
+sort(dat2$avrg_accuracy)
+# We got this far in the tutorial on Nov 13.
 
 # 34. Would you exclude any subjects, based on their avrg_accuracy performance?
 # Yes, I would probably exclude one subject based on their poor performance, i.e.
